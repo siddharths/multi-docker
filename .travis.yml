@@ -1,0 +1,23 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t sydbarrett/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true sydbarrett/react-test npm test
+
+after_success:
+  # Build Production docker images for all services
+  - docker build -t sydbarrett/multi-client ./client
+  - docker build -t sydbarrett/multi-nginx ./nginx
+  - docker build -t sydbarrett/multi-server ./server
+  - docker build -t sydbarrett/multi-worker ./worker
+  # Login to Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Push images to Docker Hub
+  - docker push sydbarrett/multi-client
+  - docker push sydbarrett/multi-nginx
+  - docker push sydbarrett/multi-server
+  - docker push sydbarrett/multi-worker
